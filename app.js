@@ -137,8 +137,6 @@ $(document).ready(function () {
     statsModule.init()
     moviesModule.init()
     modalModule.init()
-
-
 });
 
 
