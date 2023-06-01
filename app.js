@@ -15,8 +15,6 @@ var eventsMediator = {
     },
 };
 
-eventsMediator.emit("countries.loaded");
-eventsMediator.on("news.changed", function () { })
 
 var modalView = {
     init() {
@@ -72,6 +70,7 @@ var moviesModule = {
                 accept: 'application/json',
                 Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMTQ2MzgxMDgzNzliODFjZWNiYTE4ZmI4MDMzZTBiNSIsInN1YiI6IjY0NzczZTc3MDA1MDhhMDExNmQ1NTViNCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.5aEDM2F7O2mNwqxa-ktSn9xPYzgqNlL-KLaNEyHQxfg'
             }, success: function (result) {
+                $(".myloader").toggleClass("d-none");
                 moviesModule.movies = result.results
                 moviesModule.render()
                 moviesModule.getBestRating()
@@ -99,7 +98,7 @@ var moviesModule = {
                     </div>
                 </div>`)
 
-            $(".card" + i).on('click', function () {    
+            $(".card" + i).on('click', function () {
                 eventsMediator.emit("modal.opened", { name: movie.original_title, rating: movie.vote_average, img: imgUrl, desc: movie.overview });
 
             });
@@ -111,12 +110,14 @@ var moviesModule = {
 
 $(document).ready(function () {
     $(".nextBtn").on('click', function () {
+        $(".myloader").toggleClass("d-none");
         moviesModule.page++
         statsModule.currentPage++
         moviesModule.fetchMovies()
     })
     $(".prevBtn").on('click', function () {
         if (moviesModule.page > 1) {
+            $(".myloader").toggleClass("d-none");
             moviesModule.page--
             statsModule.currentPage--
         }
@@ -132,3 +133,5 @@ $(document).ready(function () {
 
 
 });
+
+
