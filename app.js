@@ -16,9 +16,9 @@ var eventsMediator = {
 };
 
 
-var modalView = {
+var modalModule = {
     init() {
-        eventsMediator.on("modal.opened", function (data) { modalView.openModal(data) })
+        eventsMediator.on("modal.opened", function (data) { modalModule.openModal(data) })
     },
     openModal({ name, rating, img, desc }) {
         $(".my-modal-view").toggleClass("d-none")
@@ -124,12 +124,12 @@ $(document).ready(function () {
         moviesModule.fetchMovies()
     })
     $("#close-btn").on('click', function () {
-        modalView.closeModal()
+        modalModule.closeModal()
     });
 
     statsModule.init()
     moviesModule.init()
-    modalView.init()
+    modalModule.init()
 
 
 });
