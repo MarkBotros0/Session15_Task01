@@ -15,23 +15,6 @@ var eventsMediator = {
     },
 };
 
-
-var modalModule = {
-    init() {
-        eventsMediator.on("modal.opened", function (data) { modalModule.openModal(data) })
-    },
-    openModal({ name, rating, img, desc }) {
-        $(".my-modal-view").toggleClass("d-none")
-        $(".movie-name").text(name)
-        $(".movie-rate").text("IMDB Rating: " + rating + "/10")
-        $(".movie-desc").text(desc)
-        $(".movie-img").attr("src", img)
-        console.log(img)
-    }, closeModal() {
-        $(".my-modal-view").toggleClass("d-none")
-    }
-}
-
 var statsModule = {
     currentPage: 1,
     numberOfMovies: 20,
@@ -40,13 +23,19 @@ var statsModule = {
         rating: "",
     },
     init() {
-        eventsMediator.on("movies.loaded", function (numberOfMovies) {
-            statsModule.numberOfMovies = numberOfMovies
-            statsModule.render()
+        eventsMediator.on("movies.loaded", (numberOfMovies) => {
+            this.numberOfMovies = numberOfMovies
+            this.render()
         })
-        eventsMediator.on("topRated.update", function (bestRatingMovie) {
-            statsModule.topRatedMovie.movieName = bestRatingMovie.original_title
-            statsModule.topRatedMovie.rating = bestRatingMovie.vote_average
+        eventsMediator.on("topRated.update", (topRatingMovie) => {
+            this.topRatedMovie.movieName = topRatingMovie.original_title
+            this.topRatedMovie.rating = topRatingMovie.vote_average
+        })
+        eventsMediator.on("next.pressed", () => {
+            this.currentPage++
+        })
+        eventsMediator.on("prev.pressed", () => {
+            this.currentPage--
         })
         this.render()
     }, render() {
@@ -61,28 +50,36 @@ var moviesModule = {
     movies: [],
     page: 1,
     init() {
+        eventsMediator.on("next.pressed", () => {
+            this.page++
+            this.fetchMovies()
+        })
+        eventsMediator.on("prev.pressed", () => {
+            this.page--
+            this.fetchMovies()
+        })
         this.fetchMovies()
     },
     fetchMovies() {
         $.ajax({
-            url: `https://api.themoviedb.org/3/movie/popular?language=en-US&page=${moviesModule.page}`,
+            url: `https://api.themoviedb.org/3/movie/popular?language=en-US&page=${this.page}`,
             headers: {
                 accept: 'application/json',
                 Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMTQ2MzgxMDgzNzliODFjZWNiYTE4ZmI4MDMzZTBiNSIsInN1YiI6IjY0NzczZTc3MDA1MDhhMDExNmQ1NTViNCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.5aEDM2F7O2mNwqxa-ktSn9xPYzgqNlL-KLaNEyHQxfg'
-            }, success: function (result) {
+            }, success: (result) => {
                 $(".myloader").toggleClass("d-none");
-                moviesModule.movies = result.results
-                moviesModule.render()
-                moviesModule.getBestRating()
-                eventsMediator.emit("movies.loaded", moviesModule.movies.length);
+                this.movies = result.results
+                this.render()
+                this.getTopRating()
+                eventsMediator.emit("movies.loaded", this.movies.length);
             }
         });
-    }, getBestRating() {
-        const bestRatingMovie = moviesModule.movies.reduce(
+    }, getTopRating() {
+        const topRatingMovie = this.movies.reduce(
             (prev, current) => {
                 return prev.vote_average > current.vote_average ? prev : current
             })
-        eventsMediator.emit("topRated.update", bestRatingMovie);
+        eventsMediator.emit("topRated.update", topRatingMovie);
     },
     render() {
         $(".my-grid").html("")
@@ -100,10 +97,27 @@ var moviesModule = {
 
             $(".card" + i).on('click', function () {
                 eventsMediator.emit("modal.opened", { name: movie.original_title, rating: movie.vote_average, img: imgUrl, desc: movie.overview });
-
             });
         }
 
+    }
+}
+
+var modalModule = {
+    init() {
+        $("#close-btn").on('click', function () {
+            modalModule.closeModal()
+        });
+        eventsMediator.on("modal.opened", this.openModal)
+    },
+    openModal({ name, rating, img, desc }) {
+        $(".my-modal-view").toggleClass("d-none")
+        $(".movie-name").text(name)
+        $(".movie-rate").text("IMDB Rating: " + rating + "/10")
+        $(".movie-desc").text(desc)
+        $(".movie-img").attr("src", img)
+    }, closeModal() {
+        $(".my-modal-view").toggleClass("d-none")
     }
 }
 
@@ -111,21 +125,14 @@ var moviesModule = {
 $(document).ready(function () {
     $(".nextBtn").on('click', function () {
         $(".myloader").toggleClass("d-none");
-        moviesModule.page++
-        statsModule.currentPage++
-        moviesModule.fetchMovies()
+        eventsMediator.emit("next.pressed");
     })
     $(".prevBtn").on('click', function () {
         if (moviesModule.page > 1) {
             $(".myloader").toggleClass("d-none");
-            moviesModule.page--
-            statsModule.currentPage--
+            eventsMediator.emit("prev.pressed");
         }
-        moviesModule.fetchMovies()
     })
-    $("#close-btn").on('click', function () {
-        modalModule.closeModal()
-    });
 
     statsModule.init()
     moviesModule.init()
